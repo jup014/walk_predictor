@@ -1,0 +1,7 @@
+venv/
+data/
+
+*.pyc
+.DS_Store
+.vscode/launch.json
+mnist_test.py
