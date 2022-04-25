@@ -1,5 +1,10 @@
+argh==0.26.2
+gtp==0.2
 numpy==1.22.3
 pandas==1.4.2
 python-dateutil==2.8.2
 pytz==2022.1
+PyYAML==6.0
+sgf==0.5
 six==1.16.0
+watchdog==2.1.7
