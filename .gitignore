@@ -5,3 +5,4 @@ data/
 .DS_Store
 .vscode/launch.json
 mnist_test.py
+log.txt

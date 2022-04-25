@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from itertools import product
 from datetime import date, timedelta
+from .report import log
 
 def get_date(x):
     return date(x.year, x.month, x.day)
@@ -44,9 +45,9 @@ def product_df(mat1, mat2):
     temp = temp.drop(columns=[0, 1])
     return temp
 
-
 class DataLoader:
     def __init__(self, data_path, model_parameter):
+        log("DataLoader.__init__()")
         self.data_path = data_path
         self.model_parameter = model_parameter
         self.raw_data = {}
@@ -59,8 +60,12 @@ class DataLoader:
         
 
     def load_data(self):
+        log("DataLoader.load_data()")
+        log("  Loading jawbone.csv data...")
         self.raw_data["jawbone"] = read_csv(os.path.join(self.data_path, 'jawbone.csv'), low_memory=False)
+        log("  Loading daily.csv data...")
         self.raw_data["daily"] = read_csv(os.path.join(self.data_path, 'daily.csv'), low_memory=False)
+        log("  Loading dose.csv data...")
         self.raw_data["dose"] = read_csv(os.path.join(self.data_path, 'dose.csv'), low_memory=False)
         
 
@@ -80,21 +85,16 @@ class Preprocessor:
 
 
     def __init__(self, data_loader):
+        log("Preprocessor.__init__()")
         self.data_loader = data_loader
         self.model_parameter = data_loader.model_parameter
         self.preprocess()
 
     def preprocess(self):
+        log("Preprocessor.preprocess()")
         if self.model_parameter in ("walk only", "walk and alarm"):
-            # Column names of jawbone data
-            # 'Var1', 'user', 'start_datetime', 'end_datetime', 'timezone', 'userid',
-            # 'steps', 'gmtoff', 'tz', 'start_date', 'end_date', 'start_utime',
-            # 'end_utime', 'start_udate', 'end_udate', 'intake_date', 'intake_utime',
-            # 'intake_tz', 'intake_gmtoff', 'intake_hour', 'intake_min',
-            # 'intake_slot', 'travel_start', 'travel_end', 'exit_date',
-            # 'dropout_date', 'last_date', 'last_utime', 'last_tz', 'last_gmtoff',
-            # 'last_hour', 'last_min', 'start_utime_local', 'end_utime_local'
-
+            ###### 1. Selecting columns ######
+            log("###### 1. Selecting columns ######")
 
             # duplicate jawbone data
             jawbone2 = self.data_loader.raw_data["jawbone"].copy(deep=True)
@@ -121,31 +121,38 @@ class Preprocessor:
             stat_user = user_date.groupby(['user'])['local_date'].nunique().sort_values()
 
 
+            ###### 2. Filter out the participants who have data less than 10 days ######
+            log("###### 2. Filter out the participants who have data less than 10 days ######")
+
             # filter out users that have less days of data than THRESHOLD_OF_DAYS_PER_USER
             users_to_be_removed = stat_user[stat_user < Preprocessor.THRESHOLD_OF_DAYS_PER_USER].index
 
             # three participants were removed
 
-            print("Threshold: {}".format(Preprocessor.THRESHOLD_OF_DAYS_PER_USER))
-            print("Users to be removed:{}".format(list(users_to_be_removed)))
+            log("Threshold: {}".format(Preprocessor.THRESHOLD_OF_DAYS_PER_USER))
+            log("Users to be removed:{}".format(list(users_to_be_removed)))
 
             jawbone4 = jawbone3[~jawbone3["user"].isin(users_to_be_removed)]
 
             user_date2 = user_date[~user_date["user"].isin(users_to_be_removed)]
 
-            print("Number of user-minute pairs: {}".format(len(user_date2)))
-            print("Number of minutes per user: ")
+
+            ###### 3. Generate basic data stats ######
+            log("###### 3. Generate basic data stats ######")
+
+            log("Number of user-minute pairs: {}".format(len(user_date2)))
+            log("Number of minutes per user: ")
             user_date2_stat = user_date2.groupby(['user'])['local_date'].nunique().sort_values()
-            # print(user_date2_stat)    ## too long
+            # log(user_date2_stat)    ## too long
             
             # Mean: 43.26829268292683 Stdev: 9.088521305041603
-            print("  Mean: {} Stdev: {}".format(user_date2_stat.mean(), user_date2_stat.std()))
+            log("  Mean: {} Stdev: {}".format(user_date2_stat.mean(), user_date2_stat.std()))
             
             # printing the amount of data removed
             jawbone3_count, _ = jawbone3.shape
             jawbone4_count, _ = jawbone4.shape
 
-            print("Shape Change: {} -> {} (-{}, -{}%)".format(
+            log("Shape Change: {} -> {} (-{}, -{}%)".format(
                 jawbone3_count, 
                 jawbone4_count, 
                 jawbone3_count - jawbone4_count, 
@@ -156,12 +163,12 @@ class Preprocessor:
             ######
             all_minutes = jawbone4.groupby(['user']).start_utime_local.nunique().sort_values()
             over60 = jawbone4[jawbone4["steps"] > Preprocessor.MINIMUM_STEPS_PER_MINUTE].groupby(['user']).start_utime_local.nunique().sort_values()
-            print("all: {}(+_{}) over60: {}(+_{})".format(all_minutes.mean(), all_minutes.std(), over60.mean(), over60.std()))
+            log("all: {}(+_{}) over60: {}(+_{})".format(all_minutes.mean(), all_minutes.std(), over60.mean(), over60.std()))
 
             minute_stat = pd.merge(user_date2_stat, all_minutes, left_index=True, right_index=True, how="left").merge(over60, left_index=True, right_index=True, how="left")
             minute_stat['all_per_day'] = minute_stat['start_utime_local_x'] / minute_stat['local_date']
             minute_stat['over60_per_day'] = minute_stat['start_utime_local_y'] / minute_stat['local_date']
-            print("per day: all: {}(+_{}) over60: {}(+_{})".format(minute_stat['all_per_day'].mean(), minute_stat['all_per_day'].std(), minute_stat['over60_per_day'].mean(), minute_stat['over60_per_day'].std()))
+            log("per day: all: {}(+_{}) over60: {}(+_{})".format(minute_stat['all_per_day'].mean(), minute_stat['all_per_day'].std(), minute_stat['over60_per_day'].mean(), minute_stat['over60_per_day'].std()))
 
             ###############################################################################
 
@@ -171,6 +178,8 @@ class Preprocessor:
             jawbone5["cumulative_minute_index"] = int((jawbone5["local_date"] - jawbone5["min"])[500].total_seconds()/60) + jawbone5["local_minute_index"]
 
             merged_walks = self.get_merged_walks(jawbone5)
+
+
 
             ###############################################################################
             # prepare the data for the walk calculation
@@ -183,22 +192,22 @@ class Preprocessor:
             vector_history = []
             
             for i in range(0, Preprocessor.MINIMUM_NUMBER_OF_MINUTES_FOR_A_WALK):
-                print("Iteration: {}, length: {}".format(i, current_vector.shape[0]))
+                log("Iteration: {}, length: {}".format(i, current_vector.shape[0]))
                 new_vector = calculate_walk(current_vector)
                 current_vector = new_vector
 
-            print("Final, length: {}".format(current_vector.shape[0]))
+            log("Final, length: {}".format(current_vector.shape[0]))
 
             consecutive_minutes = current_vector[["user", "local_date", "local_minute_index"]].drop_duplicates()
 
 
             all_walks = current_vector.groupby(['user']).cumulative_minute_index.nunique().sort_values()
-            print("all_walks: {}(+_{})".format(all_walks.mean(), all_walks.std()))
+            log("all_walks: {}(+_{})".format(all_walks.mean(), all_walks.std()))
 
             all_walk_stat = pd.merge(user_date2_stat, all_walks, left_index=True, right_index=True, how="left")
             minute_stat['all_per_day'] = minute_stat['cumulative_minute_index_x'] / minute_stat['local_date']
             minute_stat['over60_per_day'] = minute_stat['cumulative_minute_index_y'] / minute_stat['local_date']
-            print("per day: all: {}(+_{}) over60: {}(+_{})".format(minute_stat['all_per_day'].mean(), minute_stat['all_per_day'].std(), minute_stat['over60_per_day'].mean(), minute_stat['over60_per_day'].std()))
+            log("per day: all: {}(+_{}) over60: {}(+_{})".format(minute_stat['all_per_day'].mean(), minute_stat['all_per_day'].std(), minute_stat['over60_per_day'].mean(), minute_stat['over60_per_day'].std()))
 
     def append_new_row(self, cur_user, start_cumulative_minute_index, cur_cumulative_minute_index, cur_local_date, merged_walks):
         merged_walks = pd.concat([merged_walks,
@@ -237,11 +246,11 @@ class Preprocessor:
             })
 
             for index, row in sorted_minutes.iterrows():
-                # print("{} {} {}".format(row.user, row.cumulative_minute_index, row.steps))
+                # log("{} {} {}".format(row.user, row.cumulative_minute_index, row.steps))
                 # if index % 1000 == 0:
-                # print("{}/{}".format(index, sorted_minutes.shape[0]))
+                # log("{}/{}".format(index, sorted_minutes.shape[0]))
                 if row.user != cur_user:
-                    print("user: {}".format(row.user))
+                    log("user: {}".format(row.user))
                     if cur_cumulative_minute_index:
                         merged_walks = self.append_new_row(cur_user, start_cumulative_minute_index, cur_cumulative_minute_index, cur_local_date, merged_walks)
                     cur_user = row.user
@@ -250,7 +259,7 @@ class Preprocessor:
                     cur_local_date = row.local_date
                 else:
                     if row.cumulative_minute_index != cur_cumulative_minute_index + 1:
-                        # print("  new cum min index: {}".format(row.cumulative_minute_index))
+                        # log("  new cum min index: {}".format(row.cumulative_minute_index))
                         merged_walks = self.append_new_row(cur_user, start_cumulative_minute_index, cur_cumulative_minute_index, cur_local_date, merged_walks)
                         start_cumulative_minute_index = row.cumulative_minute_index
                         cur_cumulative_minute_index = row.cumulative_minute_index
