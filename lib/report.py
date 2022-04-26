@@ -3,7 +3,7 @@ import os
 import threading
 
 
-def log(msg):
+def log(msg=""):
     f_msg = "{}\t{}\t{}\t{}".format(datetime.datetime.now(), os.getpid(), threading.get_ident(), msg)
 
     print(f_msg)
