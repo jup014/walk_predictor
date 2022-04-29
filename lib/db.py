@@ -1,6 +1,7 @@
 
 import datetime
 import os
+from bson import ObjectId
 import pymongo
 
 def get_mongo_client():
@@ -65,7 +66,7 @@ def post_result(job_id, output, client=None):
         client = get_mongo_client()
     return client.find_one_and_update(
         {
-            "_id": job_id
+            "_id": ObjectId(job_id)
         },
         {
             "$set": {

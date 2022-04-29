@@ -39,11 +39,13 @@ def work(k = None):
         cpu, ram = get_5_sec_cpu_and_ram_usage()
         log("cpu: {}%, mem: {}%".format(cpu, ram))
 
-        log("  fetching a job")
+        
         if k:
+            log("fetching job for k={}".format(k))
             job = fetch_job(k)
             # row = retry_db(fetch_job, k)
         else:
+            log("  fetching a job")
             job = fetch_job()
             # row = retry_db(fetch_job)
         
