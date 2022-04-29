@@ -65,7 +65,7 @@ def post_result(job_id, output, client=None):
         client = get_mongo_client()
     return client.find_one_and_update(
         {
-            "id": job_id
+            "_id": job_id
         },
         {
             "$set": {
