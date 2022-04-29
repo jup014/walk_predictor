@@ -95,9 +95,9 @@ def work(k = None):
             model = train(train_input_np, train_output_np, algorithm, n_dim, n_classes, n_layer, neuron_arch, k)
             log("  model for job({}) is trained".format(job_id))
 
-            log("  saving model")
-            save_model(k, job, algorithm, model)
-            log("  model saved")
+            # log("  saving model")
+            # save_model(k, job, algorithm, model)
+            # log("  model saved")
 
             log("  testing model for job({})".format(job_id))
             output = test(model, test_input_np, test_output_np, algorithm, n_dim, n_classes, n_layer, neuron_arch, k)
