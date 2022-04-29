@@ -246,7 +246,7 @@ def train(train_input_np, train_output_np, algorithm, n_dim, n_classes, n_layer,
             return model
         # evaluate model with standardized dataset
         early_stop_10 = keras.callbacks.EarlyStopping(monitor='val_loss', patience=10 )
-        estimator = KerasClassifier(model=create_model, epochs=200, batch_size=32, verbose=1, validation_split=0.1, callbacks=[early_stop_10], class_weight='balanced')
+        estimator = KerasClassifier(model=create_model, epochs=200, batch_size=512, verbose=1, validation_split=0.1, callbacks=[early_stop_10], class_weight='balanced')
 
         pipeline = pl_simple(estimator)
     else:
