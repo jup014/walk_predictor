@@ -64,9 +64,9 @@ def work(k = None):
 
             log("  job found: id={}, k={}, algorithm={}".format(job_id, new_k, algorithm))
 
-            log("  updating job({}) status to 'running'".format(job_id))
-            update_job_status_to_running(job_id)
-            log("  job updated")
+            # log("  updating job({}) status to 'running'".format(job_id))
+            # update_job_status_to_running(job_id)
+            # log("  job updated")
 
             if k:
                 if k == new_k:
@@ -163,19 +163,19 @@ def retry_db(fn, *args, **kwargs):
             log("  sqlite3.OperationalError. Retrying...")
             sleep(1)
 
-def save_model_to_db(job_id, model_name, pipeline_str):
-    con = sqlite3.connect("data/data.db")
-    cur = con.cursor()
-    cur.execute("INSERT INTO models (job_id, model_str, model_name) VALUES (?, ?, ?)", (job_id, pipeline_str, model_name))
-    con.commit()
-    con.close()
+# def save_model_to_db(job_id, model_name, pipeline_str):
+#     con = sqlite3.connect("data/data.db")
+#     cur = con.cursor()
+#     cur.execute("INSERT INTO models (job_id, model_str, model_name) VALUES (?, ?, ?)", (job_id, pipeline_str, model_name))
+#     con.commit()
+#     con.close()
 
-def update_job_status_to_running(job_id):
-    con = sqlite3.connect("data/data.db")
-    cur = con.cursor()
-    cur.execute("UPDATE jobs SET status = 'running', when_started = ? WHERE id = ?", (datetime.datetime.now(), job_id,))
-    con.commit()
-    con.close()
+# def update_job_status_to_running(job_id):
+#     con = sqlite3.connect("data/data.db")
+#     cur = con.cursor()
+#     cur.execute("UPDATE jobs SET status = 'running', when_started = ? WHERE id = ?", (datetime.datetime.now(), job_id,))
+#     con.commit()
+#     con.close()
 
 def fetch_job(k=None):
     return fetch_job_in_queue(k)
