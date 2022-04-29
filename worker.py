@@ -153,7 +153,7 @@ def save_model(k, job, algorithm, model):
 
     # retry_db(save_model_to_db, job_id, model_name, pipeline_str)
 
-    dump(model, "models/k_{}/{}/{}.joblib".format(k, algorithm, model_name))
+    # dump(model, "models/k_{}/{}/{}.joblib".format(k, algorithm, model_name))
 
 def retry_db(fn, *args, **kwargs):
     while True:
