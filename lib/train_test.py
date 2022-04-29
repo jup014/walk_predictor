@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 import sqlite3
+from lib.db import build_new_job, get_mongo_client, insert_many_new_jobs, insert_new_job
 
 from lib.report import log
 
@@ -26,28 +27,31 @@ class Organizer:
         log("Organizer: split data")
         self.split_data()
         log("Organizer: create db")
-        self.create_db()
+        # self.create_db()
         log("Organizer: enqueue")
         self.enqueue()
         log("Organizer: end")
     
-    def create_db(self):
-        con = sqlite3.connect("data/data.db")
+    # def create_db(self):
+    #     con = sqlite3.connect("data/data.db")
 
-        cur = con.cursor()
+    #     cur = con.cursor()
 
-        cur.execute("CREATE TABLE IF NOT EXISTS jobs (id INTEGER PRIMARY KEY, k INT, input_value TEXT, status TEXT, when_enqueued DATETIME, when_started DATETIME, when_finished DATETIME, output_value TEXT)")
-        # cur.execute("CREATE TABLE IF NOT EXISTS models (id INTEGER PRIMARY KEY, job_id INT, model_str TEXT, model_name TEXT)")
+    #     cur.execute("CREATE TABLE IF NOT EXISTS jobs (id INTEGER PRIMARY KEY, k INT, input_value TEXT, status TEXT, when_enqueued DATETIME, when_started DATETIME, when_finished DATETIME, output_value TEXT)")
+    #     # cur.execute("CREATE TABLE IF NOT EXISTS models (id INTEGER PRIMARY KEY, job_id INT, model_str TEXT, model_name TEXT)")
         
-        con.commit()
-        con.close()
+    #     con.commit()
+    #     con.close()
 
     def enqueue(self):
-        con = sqlite3.connect("data/data.db")
+        # con = sqlite3.connect("data/data.db")
 
-        cur = con.cursor()
+        # cur = con.cursor()
 
         algorithms = ["logistic_regression", "svm", "xgboost", "random_forest", "decision_tree"]
+        client = get_mongo_client()
+
+        list_of_params = []
 
         for algorithm in algorithms:
             for i in range(self.K):
@@ -55,7 +59,9 @@ class Organizer:
                     "k": i,
                     "algorithm": algorithm,
                 }
-                cur.execute("INSERT INTO jobs (input_value, k, status, when_enqueued) VALUES (?, ?, ?, ?)", (json.dumps(param), i, "queued", datetime.datetime.now()))
+                
+                list_of_params.append(build_new_job(param))
+                # cur.execute("INSERT INTO jobs (input_value, k, status, when_enqueued) VALUES (?, ?, ?, ?)", (json.dumps(param), i, "queued", datetime.datetime.now()))
 
         for experiment_number in range(self.N_EXPERIMENT):
             for n_layer in range(1, Organizer.N_LAYER_MAX):
@@ -69,9 +75,11 @@ class Organizer:
                         "neuron_arch": neuron_arch,
                         "experiment_number": "{}_{}".format(experiment_number, n_layer)
                     }
-                    cur.execute("INSERT INTO jobs (input_value, k, status, when_enqueued) VALUES (?, ?, ?, ?)", (json.dumps(param), i, "queued", datetime.datetime.now()))
-        con.commit()
-        con.close()
+                    list_of_params.append(build_new_job(param))
+                    # cur.execute("INSERT INTO jobs (input_value, k, status, when_enqueued) VALUES (?, ?, ?, ?)", (json.dumps(param), i, "queued", datetime.datetime.now()))
+        # con.commit()
+        # con.close()
+        insert_many_new_jobs(list_of_params, client)
 
     def split_data(self):
         total_count = self.data_for_model.shape[0]

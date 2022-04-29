@@ -6,6 +6,7 @@ from time import sleep
 import numpy as np
 
 import pandas as pd
+from lib.db import fetch_job_in_queue, post_result
 from lib.report import log
 
 
@@ -40,11 +41,13 @@ def work(k = None):
 
         log("  fetching a job")
         if k:
-            row = retry_db(fetch_job, k)
+            job = fetch_job(k)
+            # row = retry_db(fetch_job, k)
         else:
-            row = retry_db(fetch_job)
+            job = fetch_job()
+            # row = retry_db(fetch_job)
         
-        if row is None:
+        if job is None:
             if k:
                 log("  no jobs for k={}. Retrying for any k...".format(k))
                 k = None
@@ -52,12 +55,12 @@ def work(k = None):
                 log("  no jobs. Exiting...")
                 return
         else:
-            job_id = row[0]
-            new_k = row[1]
-            input_value = json.loads(row[2])
-            algorithm = input_value["algorithm"]
+            job_id = str(job['_id'])
+            new_k = job['k']
+            
+            algorithm = job['algorithm']
 
-            log("  job found: id={}, k={}, input_value={}".format(job_id, new_k, input_value))
+            log("  job found: id={}, k={}, algorithm={}".format(job_id, new_k, algorithm))
 
             log("  updating job({}) status to 'running'".format(job_id))
             retry_db(update_job_status_to_running, job_id)
@@ -80,8 +83,8 @@ def work(k = None):
                 n_dim, n_classes, train_input_np, train_output_np, test_input_np, test_output_np = data_load_for_k(k)
 
             if algorithm == "mlp":
-                n_layer = input_value["n_layer"]
-                neuron_arch = input_value["neuron_arch"]
+                n_layer = job["n_layer"]
+                neuron_arch = job["neuron_arch"]
             else:
                 n_layer = None
                 neuron_arch = None
@@ -91,16 +94,16 @@ def work(k = None):
             log("  model for job({}) is trained".format(job_id))
 
             log("  saving model")
-            save_model(k, job_id, input_value, algorithm, model)
+            save_model(k, job, algorithm, model)
             log("  model saved")
 
             log("  testing model for job({})".format(job_id))
             output = test(model, test_input_np, test_output_np, algorithm, n_dim, n_classes, n_layer, neuron_arch, k)
             log("  model for job({}) is tested: {}".format(job_id, output))
-            output_str = json.dumps(output)
+            # output_str = json.dumps(output)
             
             log("  updating job({}) status to 'done'".format(job_id))
-            retry_db(update_job_status_to_done, job_id, output_str)
+            retry_db(update_job_status_to_done, job_id, output)
 
 def data_load_for_k(k):
     log("  loading data for k={}".format(k))
@@ -121,14 +124,15 @@ def data_load_for_k(k):
     log("  data for k={} is loaded".format(k))
     return n_dim,n_classes,train_input_np,train_output_np,test_input_np,test_output_np
 
-def update_job_status_to_done(job_id, output_str):
-    con = sqlite3.connect("data/data.db")
-    cur = con.cursor()
-    cur.execute("UPDATE jobs SET status = 'done', when_finished = ?, output_value = ? WHERE id = ?", (datetime.datetime.now(), output_str, job_id, ))
-    con.commit()
-    con.close()
+def update_job_status_to_done(job_id, output):
+    post_result(job_id, output)
+    # con = sqlite3.connect("data/data.db")
+    # cur = con.cursor()
+    # cur.execute("UPDATE jobs SET status = 'done', when_finished = ?, output_value = ? WHERE id = ?", (datetime.datetime.now(), output, job_id, ))
+    # con.commit()
+    # con.close()
 
-def save_model(k, job_id, input_value, algorithm, model):
+def save_model(k, job, algorithm, model):
     if not os.path.exists("models"):
         os.makedirs("models")
     if not os.path.exists("models/k_{}".format(k)):
@@ -137,8 +141,8 @@ def save_model(k, job_id, input_value, algorithm, model):
         os.makedirs("models/k_{}/{}".format(k, algorithm))
 
     if algorithm == "mlp":
-        n_layer = input_value["n_layer"]
-        neuron_arch = input_value["neuron_arch"]
+        n_layer = job["n_layer"]
+        neuron_arch = job["neuron_arch"]
 
         model_name = "model_{}_{}_{}.pkl".format(algorithm, n_layer, neuron_arch)
     else:
@@ -172,16 +176,17 @@ def update_job_status_to_running(job_id):
     con.close()
 
 def fetch_job(k=None):
-    con = sqlite3.connect("data/data.db")
-    cur = con.cursor()
-    if k:
-        cur.execute("SELECT id, k, input_value, status, when_enqueued FROM jobs WHERE k=? AND status=? ORDER BY id ASC LIMIT 1", (k, "queued"))
-    else:
-        cur.execute("SELECT id, k, input_value, status, when_enqueued FROM jobs WHERE status=? ORDER BY id ASC LIMIT 1", ("queued",))
-    row = cur.fetchone()
-    con.close()
+    return fetch_job_in_queue(k)
+    # con = sqlite3.connect("data/data.db")
+    # cur = con.cursor()
+    # if k:
+    #     cur.execute("SELECT id, k, input_value, status, when_enqueued FROM jobs WHERE k=? AND status=? ORDER BY id ASC LIMIT 1", (k, "queued"))
+    # else:
+    #     cur.execute("SELECT id, k, input_value, status, when_enqueued FROM jobs WHERE status=? ORDER BY id ASC LIMIT 1", ("queued",))
+    # row = cur.fetchone()
+    # con.close()
 
-    return row
+    # return row
 
 
 
@@ -294,3 +299,13 @@ work()
 # if __name__ == '__main__':
 #     with Pool(10) as p:
 #         p.map(work, range(10))
+
+# new_job_id = insert_new_job()
+# log("  new job id: {}".format(new_job_id))
+
+# fetched_job = fetch_job_in_queue()
+# log("  fetched job: {}".format(fetched_job))
+
+# fetch_result = post_result(fetched_job.get("id"), {"test": 123})
+# log("  fetch result: {}".format(fetch_result))
+
