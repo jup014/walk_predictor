@@ -12,6 +12,9 @@ def get_mongo_client():
 def build_new_job(params={}):
     params['when_created'] = datetime.datetime.now()
     params['status'] = "queued"
+    params['when_started'] = None
+    params['when_finished'] = None
+    params['output'] = None
 
     return params
 def insert_new_job(params={}, client=None):
