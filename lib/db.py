@@ -77,3 +77,40 @@ def post_result(job_id, output, client=None):
         },
         return_document=pymongo.ReturnDocument.AFTER
     )
+
+def rollback_all_running(client=None):
+    if client is None:
+        client = get_mongo_client()
+    return client.update_many(
+        {
+            "status": "running"
+        },
+        {
+            "$set": {
+                "status": "queued",
+                "when_started": None
+            }
+        }
+    )
+
+def get_stat(group_by_list=[], client=None):
+    if client is None:
+        client = get_mongo_client()
+
+    group_by_condition_dict = {}
+
+    for group_by in group_by_list:
+        group_by_condition_dict[group_by] = "$" + group_by
+
+    pipeline = [
+        {
+            "$group": {
+                "_id": group_by_condition_dict,
+                "count": {
+                    "$sum": 1
+                }
+            } if (len(group_by_list) > 0) else None
+        }
+    ]
+    
+    return client.aggregate(pipeline)

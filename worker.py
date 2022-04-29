@@ -65,7 +65,7 @@ def work(k = None):
             log("  job found: id={}, k={}, algorithm={}".format(job_id, new_k, algorithm))
 
             log("  updating job({}) status to 'running'".format(job_id))
-            retry_db(update_job_status_to_running, job_id)
+            update_job_status_to_running(job_id)
             log("  job updated")
 
             if k:
@@ -105,7 +105,7 @@ def work(k = None):
             # output_str = json.dumps(output)
             
             log("  updating job({}) status to 'done'".format(job_id))
-            retry_db(update_job_status_to_done, job_id, output)
+            update_job_status_to_done(job_id, output)
 
 def data_load_for_k(k):
     log("  loading data for k={}".format(k))
