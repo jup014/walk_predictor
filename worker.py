@@ -134,21 +134,21 @@ def update_job_status_to_done(job_id, output):
     # con.commit()
     # con.close()
 
-def save_model(k, job, algorithm, model):
-    if not os.path.exists("models"):
-        os.makedirs("models")
-    if not os.path.exists("models/k_{}".format(k)):
-        os.makedirs("models/k_{}".format(k))
-    if not os.path.exists("models/k_{}/{}".format(k, algorithm)):
-        os.makedirs("models/k_{}/{}".format(k, algorithm))
+# def save_model(k, job, algorithm, model):
+#     if not os.path.exists("models"):
+#         os.makedirs("models")
+#     if not os.path.exists("models/k_{}".format(k)):
+#         os.makedirs("models/k_{}".format(k))
+#     if not os.path.exists("models/k_{}/{}".format(k, algorithm)):
+#         os.makedirs("models/k_{}/{}".format(k, algorithm))
 
-    if algorithm == "mlp":
-        n_layer = job["n_layer"]
-        neuron_arch = job["neuron_arch"]
+#     if algorithm == "mlp":
+#         n_layer = job["n_layer"]
+#         neuron_arch = job["neuron_arch"]
 
-        model_name = "model_{}_{}_{}.pkl".format(algorithm, n_layer, neuron_arch)
-    else:
-        model_name = "model_{}.pkl".format(algorithm)
+#         model_name = "model_{}_{}_{}.pkl".format(algorithm, n_layer, neuron_arch)
+#     else:
+#         model_name = "model_{}.pkl".format(algorithm)
     # pipeline_str = pickle.dumps(model)
 
     # retry_db(save_model_to_db, job_id, model_name, pipeline_str)
