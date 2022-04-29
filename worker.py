@@ -143,7 +143,7 @@ def save_model(k, job_id, input_value, algorithm, model):
         model_name = "model_{}_{}_{}.pkl".format(algorithm, n_layer, neuron_arch)
     else:
         model_name = "model_{}.pkl".format(algorithm)
-    pipeline_str = pickle.dumps(model)
+    # pipeline_str = pickle.dumps(model)
 
     # retry_db(save_model_to_db, job_id, model_name, pipeline_str)
 
@@ -238,8 +238,8 @@ def train(train_input_np, train_output_np, algorithm, n_dim, n_classes, n_layer,
             model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
             return model
         # evaluate model with standardized dataset
-        early_stop_100 = keras.callbacks.EarlyStopping(monitor='val_loss', patience=100)
-        estimator = KerasClassifier(model=create_model, epochs=200, batch_size=32, verbose=1, validation_split=0.1, callbacks=[early_stop_100], class_weight='balanced')
+        early_stop_20 = keras.callbacks.EarlyStopping(monitor='val_loss', patience=20 )
+        estimator = KerasClassifier(model=create_model, epochs=200, batch_size=32, verbose=1, validation_split=0.1, callbacks=[early_stop_20], class_weight='balanced')
 
         pipeline = pl_simple(estimator)
     else:

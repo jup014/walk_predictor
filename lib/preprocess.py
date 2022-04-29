@@ -73,7 +73,7 @@ class DataLoader:
 
         # to use unlimited memory for large dataframes
         pd.options.mode.chained_assignment = None
-
+        
         self.data = self.load_data()
 
     def load_data(self):
@@ -90,7 +90,7 @@ class DataLoader:
         self.raw_data["dose"] = read_csv(
             os.path.join(self.data_path, "dose.csv"), low_memory=False
         )
-        log()
+        log() ## Meelim
 
 
 class Preprocessor:
